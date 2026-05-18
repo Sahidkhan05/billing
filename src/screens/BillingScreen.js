@@ -11,6 +11,7 @@ import {
 } from "react-native";
 
 import { supabase } from "../lib/supabase";
+import { printInvoice, shareInvoicePdf } from "../utils/invoicePdf";
 
 const money = (value) => `₹${Number(value || 0).toFixed(2)}`;
 
@@ -202,6 +203,66 @@ export default function BillingScreen() {
     setBillItems((currentItems) =>
       currentItems.filter((item) => item.id !== id)
     );
+  };
+
+  const currentInvoice = () => ({
+    id: null,
+    created_at: new Date().toISOString(),
+    client_name: client?.name || "",
+    client_phone: client?.phone || phone,
+    client_email: client?.email || "",
+    client_address: client?.address || "",
+    total_amount: grandTotal,
+  });
+
+  const validateInvoicePreview = () => {
+    if (!client) {
+      Alert.alert("Client Required", "Please select a client before printing.");
+      return false;
+    }
+
+    if (billItems.length === 0) {
+      Alert.alert("No Products Added", "Please add at least one product.");
+      return false;
+    }
+
+    return true;
+  };
+
+  const handlePrintInvoice = async () => {
+    if (!validateInvoicePreview()) {
+      return;
+    }
+
+    try {
+      await printInvoice({
+        bill: currentInvoice(),
+        items: billItems,
+      });
+    } catch (error) {
+      console.log(error);
+      Alert.alert("Print Failed", "Unable to print this invoice.");
+    }
+  };
+
+  const handleDownloadInvoice = async () => {
+    if (!validateInvoicePreview()) {
+      return;
+    }
+
+    try {
+      const result = await shareInvoicePdf({
+        bill: currentInvoice(),
+        items: billItems,
+      });
+
+      if (!result.shared) {
+        Alert.alert("Invoice Ready", `PDF generated successfully.\n${result.uri}`);
+      }
+    } catch (error) {
+      console.log(error);
+      Alert.alert("Download Failed", "Unable to generate this invoice PDF.");
+    }
   };
 
   const handleSaveBill = async () => {
@@ -501,9 +562,7 @@ export default function BillingScreen() {
           <View style={styles.actionButtons}>
             <TouchableOpacity
               style={styles.secondaryButton}
-              onPress={() =>
-                Alert.alert("Print Invoice", "Print support is ready for the next upgrade.")
-              }
+              onPress={handlePrintInvoice}
             >
               <Text style={styles.secondaryButtonText}>Print</Text>
             </TouchableOpacity>
@@ -520,9 +579,7 @@ export default function BillingScreen() {
 
             <TouchableOpacity
               style={styles.secondaryButton}
-              onPress={() =>
-                Alert.alert("Download Invoice", "PDF download can plug into this bill data.")
-              }
+              onPress={handleDownloadInvoice}
             >
               <Text style={styles.secondaryButtonText}>Download</Text>
             </TouchableOpacity>
