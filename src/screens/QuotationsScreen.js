@@ -14,8 +14,19 @@ import {
 } from "react-native";
 
 import { supabase } from "../lib/supabase";
+import { printInvoice, shareInvoicePdf } from "../utils/invoicePdf";
 
 const money = (value) => `₹${Number(value || 0).toFixed(2)}`;
+const quotationDocumentOptions = {
+  title: "Quotation",
+  subtitle: "Professional estimate for electrical products and services",
+  recipientLabel: "Prepared For",
+  numberPrefix: "QT",
+  draftNumber: "DRAFT-QUOTE",
+  totalLabel: "Quote Total",
+  footer:
+    "This quotation is an estimate based on the listed products and quantities. Final billing may vary if scope, products, or quantities change.",
+};
 
 const formatDate = (value) => {
   if (!value) {
@@ -269,6 +280,127 @@ export default function QuotationsScreen() {
     );
   };
 
+  const currentQuotation = () => ({
+    id: editQuotation?.id || null,
+    created_at: editQuotation?.created_at || new Date().toISOString(),
+    client_name: selectedClient?.name || "",
+    client_phone: selectedClient?.phone || "",
+    client_email: selectedClient?.email || "",
+    client_address: selectedClient?.address || "",
+    notes,
+    status,
+    total_amount: totalAmount,
+  });
+
+  const validateQuotationPreview = () => {
+    if (!selectedClient) {
+      Alert.alert("Client Required", "Please select a client first.");
+      return false;
+    }
+
+    if (quoteItems.length === 0) {
+      Alert.alert("Products Required", "Please add at least one product.");
+      return false;
+    }
+
+    return true;
+  };
+
+  const loadQuotationItems = async (quotation) => {
+    const { data, error } = await supabase
+      .from("quotation_items")
+      .select("*")
+      .eq("quotation_id", quotation.id)
+      .order("id", { ascending: true });
+
+    if (error) {
+      console.log(error);
+      throw error;
+    }
+
+    return data || [];
+  };
+
+  const printQuotation = async ({ quotation, items }) => {
+    await printInvoice({
+      bill: quotation,
+      items,
+      documentOptions: {
+        ...quotationDocumentOptions,
+        status: quotation.status,
+        notes: quotation.notes,
+      },
+    });
+  };
+
+  const downloadQuotation = async ({ quotation, items }) => {
+    const result = await shareInvoicePdf({
+      bill: quotation,
+      items,
+      documentOptions: {
+        ...quotationDocumentOptions,
+        status: quotation.status,
+        notes: quotation.notes,
+      },
+    });
+
+    if (!result.shared) {
+      Alert.alert("Quotation Ready", `PDF generated successfully.\n${result.uri}`);
+    }
+  };
+
+  const handlePrintPreview = async () => {
+    if (!validateQuotationPreview()) {
+      return;
+    }
+
+    try {
+      await printQuotation({
+        quotation: currentQuotation(),
+        items: quoteItems,
+      });
+    } catch (error) {
+      console.log(error);
+      Alert.alert("Print Failed", "Unable to print this quotation.");
+    }
+  };
+
+  const handleDownloadPreview = async () => {
+    if (!validateQuotationPreview()) {
+      return;
+    }
+
+    try {
+      await downloadQuotation({
+        quotation: currentQuotation(),
+        items: quoteItems,
+      });
+    } catch (error) {
+      console.log(error);
+      Alert.alert("Download Failed", "Unable to generate this quotation PDF.");
+    }
+  };
+
+  const handlePrintQuotation = async (quotation) => {
+    try {
+      const items = await loadQuotationItems(quotation);
+      await printQuotation({ quotation, items });
+    } catch (error) {
+      console.log(error);
+      Alert.alert("Print Failed", "Unable to print this quotation.");
+    }
+  };
+
+  const handleDownloadQuotation = async (quotation) => {
+    try {
+      const items = await loadQuotationItems(quotation);
+      await downloadQuotation({ quotation, items });
+    } catch (error) {
+      console.log(error);
+      Alert.alert("Download Failed", "Unable to generate this quotation PDF.");
+    }
+  };
+
   const handleSaveQuotation = async () => {
     if (!selectedClient) {
       Alert.alert("Client Required", "Please select a client.");
@@ -487,6 +619,22 @@ export default function QuotationsScreen() {
         >
           <Ionicons name="create-outline" size={16} color="#075985" />
           <Text style={styles.editText}>Edit</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={styles.printButton}
+          onPress={() => handlePrintQuotation(item)}
+        >
+          <Ionicons name="print-outline" size={16} color="#075985" />
+          <Text style={styles.printText}>Print</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={styles.downloadButton}
+          onPress={() => handleDownloadQuotation(item)}
+        >
+          <Ionicons name="download-outline" size={16} color="#166534" />
+          <Text style={styles.downloadText}>PDF</Text>
         </TouchableOpacity>
 
         <TouchableOpacity
@@ -758,6 +906,24 @@ export default function QuotationsScreen() {
               <Text style={styles.totalAmount}>{money(totalAmount)}</Text>
             </View>
 
+            <View style={styles.documentActions}>
+              <TouchableOpacity
+                style={styles.documentActionButton}
+                onPress={handlePrintPreview}
+              >
+                <Ionicons name="print-outline" size={17} color="#075985" />
+                <Text style={styles.documentActionText}>Print</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.documentActionButton}
+                onPress={handleDownloadPreview}
+              >
+                <Ionicons name="download-outline" size={17} color="#075985" />
+                <Text style={styles.documentActionText}>Download PDF</Text>
+              </TouchableOpacity>
+            </View>
+
             <TouchableOpacity
               style={[styles.saveButton, saving && styles.disabledButton]}
               onPress={handleSaveQuotation}
@@ -958,6 +1124,7 @@ const styles = StyleSheet.create({
     marginTop: 12,
   },
   actions: {
+    flexWrap: "wrap",
     flexDirection: "row",
     gap: 10,
     marginTop: 15,
@@ -966,7 +1133,8 @@ const styles = StyleSheet.create({
     alignItems: "center",
     backgroundColor: "#e0f2fe",
     borderRadius: 14,
-    flex: 1,
+    flexBasis: "47%",
+    flexGrow: 1,
     flexDirection: "row",
     gap: 6,
     justifyContent: "center",
@@ -976,7 +1144,30 @@ const styles = StyleSheet.create({
     alignItems: "center",
     backgroundColor: "#fee2e2",
     borderRadius: 14,
-    flex: 1,
+    flexBasis: "47%",
+    flexGrow: 1,
+    flexDirection: "row",
+    gap: 6,
+    justifyContent: "center",
+    padding: 12,
+  },
+  printButton: {
+    alignItems: "center",
+    backgroundColor: "#e0f2fe",
+    borderRadius: 14,
+    flexBasis: "47%",
+    flexGrow: 1,
+    flexDirection: "row",
+    gap: 6,
+    justifyContent: "center",
+    padding: 12,
+  },
+  downloadButton: {
+    alignItems: "center",
+    backgroundColor: "#dcfce7",
+    borderRadius: 14,
+    flexBasis: "47%",
+    flexGrow: 1,
     flexDirection: "row",
     gap: 6,
     justifyContent: "center",
@@ -984,6 +1175,14 @@ const styles = StyleSheet.create({
   },
   editText: {
     color: "#075985",
+    fontWeight: "900",
+  },
+  printText: {
+    color: "#075985",
+    fontWeight: "900",
+  },
+  downloadText: {
+    color: "#166534",
     fontWeight: "900",
   },
   deleteText: {
@@ -1239,6 +1438,26 @@ const styles = StyleSheet.create({
   totalAmount: {
     color: "#ffffff",
     fontSize: 24,
+    fontWeight: "900",
+  },
+  documentActions: {
+    flexDirection: "row",
+    gap: 10,
+    marginBottom: 12,
+  },
+  documentActionButton: {
+    alignItems: "center",
+    backgroundColor: "#e0f2fe",
+    borderRadius: 15,
+    flex: 1,
+    flexDirection: "row",
+    gap: 7,
+    justifyContent: "center",
+    padding: 14,
+  },
+  documentActionText: {
+    color: "#075985",
+    fontSize: 14,
     fontWeight: "900",
   },
   saveButton: {

@@ -21,15 +21,38 @@ const formatDate = (value) => {
   });
 };
 
-const invoiceNumber = (bill) => (bill?.id ? `INV-${bill.id}` : "DRAFT-INVOICE");
+const documentNumber = (bill, options = {}) => {
+  const prefix = options.numberPrefix || "INV";
+  const draftNumber = options.draftNumber || `DRAFT-${prefix}`;
 
-export const buildInvoiceHtml = ({ bill, items }) => {
+  return bill?.id ? `${prefix}-${bill.id}` : draftNumber;
+};
+
+const documentConfig = (options = {}) => ({
+  title: options.title || "Invoice",
+  subtitle: options.subtitle || "Electrical products and services billing",
+  recipientLabel: options.recipientLabel || "Bill To",
+  numberPrefix: options.numberPrefix || "INV",
+  draftNumber: options.draftNumber || "DRAFT-INVOICE",
+  footer:
+    options.footer ||
+    "Thank you for your business. This invoice was generated from the billing system and includes the saved product line items above.",
+  notesLabel: options.notesLabel || "Notes",
+  totalLabel: options.totalLabel || "Total",
+  status: options.status,
+  notes: options.notes,
+});
+
+export const buildInvoiceHtml = ({ bill, items, documentOptions }) => {
+  const config = documentConfig(documentOptions);
   const safeItems = items || [];
   const subtotal = safeItems.reduce(
     (sum, item) => sum + Number(item.total || 0),
     0
   );
   const total = Number(bill?.total_amount ?? subtotal);
+  const notes = config.notes ?? bill?.notes;
+  const status = config.status ?? bill?.status;
 
   const itemRows = safeItems
     .map(
@@ -85,6 +108,17 @@ export const buildInvoiceHtml = ({ bill, items }) => {
           .invoice-id {
             font-size: 22px;
             font-weight: 800;
+            text-align: right;
+          }
+          .status {
+            background: rgba(255, 255, 255, 0.12);
+            border: 1px solid rgba(255, 255, 255, 0.24);
+            border-radius: 999px;
+            display: inline-block;
+            font-size: 12px;
+            font-weight: 800;
+            margin-top: 10px;
+            padding: 6px 10px;
             text-align: right;
           }
           .date {
@@ -169,25 +203,46 @@ export const buildInvoiceHtml = ({ bill, items }) => {
             line-height: 1.6;
             margin-top: 30px;
           }
+          .notes-panel {
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 14px;
+            margin-top: 22px;
+            padding: 16px;
+          }
+          .notes-value {
+            color: #334155;
+            font-size: 13px;
+            font-weight: 600;
+            line-height: 1.6;
+            margin-top: 8px;
+          }
         </style>
       </head>
       <body>
         <section class="invoice">
           <div class="header">
             <div>
-              <div class="brand">Invoice</div>
-              <div class="subtitle">Electrical products and services billing</div>
+              <div class="brand">${escapeHtml(config.title)}</div>
+              <div class="subtitle">${escapeHtml(config.subtitle)}</div>
             </div>
             <div>
-              <div class="invoice-id">${escapeHtml(invoiceNumber(bill))}</div>
+              <div class="invoice-id">${escapeHtml(
+                documentNumber(bill, config)
+              )}</div>
               <div class="date">${formatDate(bill?.created_at)}</div>
+              ${
+                status
+                  ? `<div class="status">${escapeHtml(status)}</div>`
+                  : ""
+              }
             </div>
           </div>
 
           <div class="content">
             <div class="meta-grid">
               <div class="panel">
-                <div class="label">Bill To</div>
+                <div class="label">${escapeHtml(config.recipientLabel)}</div>
                 <div class="value">
                   ${escapeHtml(bill?.client_name || "Customer")}<br />
                   ${escapeHtml(bill?.client_phone || "No phone")}<br />
@@ -222,15 +277,23 @@ export const buildInvoiceHtml = ({ bill, items }) => {
                   <strong>${currency(subtotal)}</strong>
                 </div>
                 <div class="total-row grand">
-                  <span>Total</span>
+                  <span>${escapeHtml(config.totalLabel)}</span>
                   <span>${currency(total)}</span>
                 </div>
               </div>
             </div>
 
+            ${
+              notes
+                ? `<div class="notes-panel">
+                    <div class="label">${escapeHtml(config.notesLabel)}</div>
+                    <div class="notes-value">${escapeHtml(notes)}</div>
+                  </div>`
+                : ""
+            }
+
             <div class="footer">
-              Thank you for your business. This invoice was generated from the
-              billing system and includes the saved product line items above.
+              ${escapeHtml(config.footer)}
             </div>
           </div>
         </section>
@@ -239,23 +302,24 @@ export const buildInvoiceHtml = ({ bill, items }) => {
   `;
 };
 
-export const printInvoice = async ({ bill, items }) => {
+export const printInvoice = async ({ bill, items, documentOptions }) => {
   await Print.printAsync({
-    html: buildInvoiceHtml({ bill, items }),
+    html: buildInvoiceHtml({ bill, items, documentOptions }),
   });
 };
 
-export const createInvoicePdf = async ({ bill, items }) => {
+export const createInvoicePdf = async ({ bill, items, documentOptions }) => {
   const { uri } = await Print.printToFileAsync({
-    html: buildInvoiceHtml({ bill, items }),
+    html: buildInvoiceHtml({ bill, items, documentOptions }),
     base64: false,
   });
 
   return uri;
 };
 
-export const shareInvoicePdf = async ({ bill, items }) => {
-  const uri = await createInvoicePdf({ bill, items });
+export const shareInvoicePdf = async ({ bill, items, documentOptions }) => {
+  const config = documentConfig(documentOptions);
+  const uri = await createInvoicePdf({ bill, items, documentOptions });
   const canShare = await Sharing.isAvailableAsync();
 
   if (!canShare) {
@@ -263,7 +327,7 @@ export const shareInvoicePdf = async ({ bill, items }) => {
   }
 
   await Sharing.shareAsync(uri, {
-    dialogTitle: `Download ${invoiceNumber(bill)}`,
+    dialogTitle: `Download ${documentNumber(bill, config)}`,
     mimeType: "application/pdf",
     UTI: "com.adobe.pdf",
   });

@@ -1,5 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
+import { useFocusEffect } from "@react-navigation/native";
 import {
   ActivityIndicator,
   FlatList,
@@ -12,7 +13,7 @@ import {
 
 import { supabase } from "../lib/supabase";
 
-const stockValue = (item) => Number(item.total_stock ?? item.total_unit ?? 0);
+const stockValue = (item) => Number(item.total_unit ?? 0);
 const unitType = (item) => item.unit || item.unit_type || "Unit";
 
 const stockStatus = (totalStock, remainingStock) => {
@@ -22,22 +23,17 @@ const stockStatus = (totalStock, remainingStock) => {
 
 export default function StockScreen() {
   const [products, setProducts] = useState([]);
-  const [usedByProduct, setUsedByProduct] = useState({});
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [search, setSearch] = useState("");
 
-  useEffect(() => {
-    fetchStockData();
-  }, []);
-
-  const fetchStockData = async () => {
+  const fetchStockData = useCallback(async () => {
     setLoading(true);
 
-    const [productsResult, itemsResult] = await Promise.all([
-      supabase.from("products").select("*").order("id", { ascending: false }),
-      supabase.from("bill_items").select("product_id, quantity"),
-    ]);
+    const productsResult = await supabase
+      .from("products")
+      .select("*")
+      .order("id", { ascending: false });
 
     if (productsResult.error) {
       console.log(productsResult.error);
@@ -46,21 +42,14 @@ export default function StockScreen() {
       setProducts(productsResult.data || []);
     }
 
-    if (itemsResult.error) {
-      console.log(itemsResult.error);
-      setUsedByProduct({});
-    } else {
-      const totals = (itemsResult.data || []).reduce((summary, item) => {
-        const key = item.product_id;
-        summary[key] = (summary[key] || 0) + Number(item.quantity || 0);
-        return summary;
-      }, {});
-
-      setUsedByProduct(totals);
-    }
-
     setLoading(false);
-  };
+  }, []);
+
+  useFocusEffect(
+    useCallback(() => {
+      fetchStockData();
+    }, [fetchStockData])
+  );
 
   const handleRefresh = async () => {
     setRefreshing(true);
@@ -72,7 +61,7 @@ export default function StockScreen() {
     () =>
       products.map((product) => {
         const totalStock = stockValue(product);
-        const usedStock = Number(usedByProduct[product.id] || 0);
+        const usedStock = Number(product.used_stock || 0);
         const remainingStock = Math.max(totalStock - usedStock, 0);
         const status = stockStatus(totalStock, remainingStock);
         const progress =
@@ -87,7 +76,7 @@ export default function StockScreen() {
           progress,
         };
       }),
-    [products, usedByProduct]
+    [products]
   );
 
   const filteredRows = useMemo(() => {

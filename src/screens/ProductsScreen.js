@@ -17,11 +17,7 @@ import { supabase } from "../lib/supabase";
 const units = ["Piece", "Box", "Roll", "Meter", "Packet"];
 
 const money = (value) => `₹${Number(value || 0).toFixed(2)}`;
-const stockValue = (item) => Number(item.total_stock ?? item.total_unit ?? 0);
-const missingStockColumn = (error) => {
-  const message = String(error?.message || "").toLowerCase();
-  return message.includes("total_stock") || message.includes("total_unit");
-};
+const stockValue = (item) => Number(item.total_unit ?? 0);
 
 export default function ProductsScreen() {
   const [modalVisible, setModalVisible] = useState(false);
@@ -95,29 +91,16 @@ export default function ProductsScreen() {
       product_name: productName,
       purchase_price: purchasePrice,
       selling_price: sellingPrice,
+      total_unit: numericStock,
       category,
       description,
       unit,
     };
 
-    const saveWithStockColumn = async (stockColumn) => {
-      const payload = {
-        ...productData,
-        [stockColumn]: numericStock,
-      };
-
-      if (editId) {
-        return supabase.from("products").update(payload).eq("id", editId);
-      }
-
-      return supabase.from("products").insert([payload]);
-    };
-
-    let saveResult = await saveWithStockColumn("total_stock");
-
-    if (saveResult.error && missingStockColumn(saveResult.error)) {
-      saveResult = await saveWithStockColumn("total_unit");
-    }
+    const savePayload = editId ? productData : { ...productData, used_stock: 0 };
+    const saveResult = editId
+      ? await supabase.from("products").update(savePayload).eq("id", editId)
+      : await supabase.from("products").insert([savePayload]);
 
     if (saveResult.error) {
       console.log(saveResult.error);

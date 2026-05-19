@@ -15,6 +15,7 @@ import {
 
 import { supabase } from "../lib/supabase";
 import { printInvoice, shareInvoicePdf } from "../utils/invoicePdf";
+import { updateProductsUsedStock } from "../utils/productStock";
 
 const PAGE_SIZE = 6;
 
@@ -172,6 +173,15 @@ export default function BillHistoryScreen() {
           text: "Delete",
           style: "destructive",
           onPress: async () => {
+            let items = [];
+
+            try {
+              items = await loadBillItems(bill);
+            } catch (error) {
+              Alert.alert("Delete Failed", "Unable to load bill items.");
+              return;
+            }
+
             const { error: itemsError } = await supabase
               .from("bill_items")
               .delete()
@@ -192,6 +202,16 @@ export default function BillHistoryScreen() {
               console.log(billError);
               Alert.alert("Delete Failed", "Unable to delete bill.");
               return;
+            }
+
+            try {
+              await updateProductsUsedStock(items, -1);
+            } catch (stockError) {
+              console.log(stockError);
+              Alert.alert(
+                "Bill Deleted",
+                "Bill was deleted, but product stock could not be updated."
+              );
             }
 
             setDetailsVisible(false);

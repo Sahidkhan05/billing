@@ -12,6 +12,7 @@ import {
 
 import { supabase } from "../lib/supabase";
 import { printInvoice, shareInvoicePdf } from "../utils/invoicePdf";
+import { updateProductsUsedStock } from "../utils/productStock";
 
 const money = (value) => `₹${Number(value || 0).toFixed(2)}`;
 
@@ -313,10 +314,9 @@ export default function BillingScreen() {
       .from("bill_items")
       .insert(billItemPayload);
 
-    setSaving(false);
-
     if (itemsError) {
       console.log(itemsError);
+      setSaving(false);
       Alert.alert(
         "Bill Saved",
         "Bill was created, but product items could not be saved."
@@ -324,6 +324,19 @@ export default function BillingScreen() {
       return;
     }
 
+    try {
+      await updateProductsUsedStock(billItemPayload, 1);
+    } catch (stockError) {
+      console.log(stockError);
+      setSaving(false);
+      Alert.alert(
+        "Bill Saved",
+        "Bill and items were saved, but product stock could not be updated."
+      );
+      return;
+    }
+
+    setSaving(false);
     Alert.alert("Bill Saved", "Invoice saved successfully.");
     handleCancelBill();
     fetchProducts();
