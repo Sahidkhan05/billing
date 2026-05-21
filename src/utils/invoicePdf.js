@@ -99,16 +99,17 @@ export const buildInvoiceHtml = ({ bill, items, documentOptions }) => {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            background-color: #f8fafc;
-            border: 1px solid #e2e8f0;
+            background-color: #ffffff;
+            border: 1px solid rgba(11,61,145,0.08);
+            border-left: 6px solid #0b3d91;
             border-radius: 12px;
-            padding: 24px;
-            margin-bottom: 30px;
+            padding: 20px 24px;
+            margin-bottom: 18px;
           }
           .company-info h1 {
             font-size: 22px;
-            margin: 0 0 10px 0;
-            color: #0f766e;
+            margin: 0 0 6px 0;
+            color: #0b3d91;
           }
           .company-info p {
             margin: 4px 0;
@@ -130,51 +131,48 @@ export const buildInvoiceHtml = ({ bill, items, documentOptions }) => {
           .invoice-meta p {
             margin: 4px 0;
             font-size: 14px;
-            color: #334155;
+            color: #153243;
           }
           .invoice-meta strong {
-            color: #0f766e;
+            color: #16a34a;
           }
           .qr-box {
-            width: 90px;
-            height: 90px;
+            width: 96px;
+            height: 96px;
             background-color: #ffffff;
-            border: 1px solid #cbd5e1;
-            border-radius: 8px;
-            padding: 5px;
+            border: 1px solid rgba(11,61,145,0.08);
+            border-radius: 10px;
+            padding: 6px;
           }
           .qr-box img {
             width: 100%;
             height: 100%;
             object-fit: contain;
           }
-          .title-container {
+          .title-block {
             text-align: center;
-            margin-bottom: 30px;
-            padding: 10px;
-            border-bottom: 2px solid #0f766e;
-            display: inline-block;
             width: 100%;
+            padding: 6px 12px;
           }
           .title-en {
-            font-size: 26px;
+            font-size: 22px;
             font-weight: 800;
             margin: 0;
-            color: #0f766e;
+            color: #0b3d91;
             text-transform: uppercase;
             letter-spacing: 2px;
           }
           .title-ar {
-            font-size: 22px;
+            font-size: 18px;
             font-weight: 700;
-            margin: 5px 0 0 0;
-            color: #0f766e;
+            margin: 4px 0 0 0;
+            color: #16a34a;
             font-family: 'Tajawal', sans-serif;
           }
           .customer-section {
             background-color: #ffffff;
-            border-left: 4px solid #0f766e;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            border-left: 4px solid #0b3d91;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.06);
             padding: 20px;
             border-radius: 8px;
             margin-bottom: 35px;
@@ -182,10 +180,10 @@ export const buildInvoiceHtml = ({ bill, items, documentOptions }) => {
           .customer-section h3 {
             margin: 0 0 15px 0;
             font-size: 16px;
-            color: #0f766e;
+            color: #0b3d91;
             text-transform: uppercase;
             letter-spacing: 1px;
-            border-bottom: 1px solid #e2e8f0;
+            border-bottom: 1px solid #eef2ff;
             padding-bottom: 8px;
           }
           .customer-section p {
@@ -197,60 +195,66 @@ export const buildInvoiceHtml = ({ bill, items, documentOptions }) => {
             width: 100%;
             border-collapse: separate;
             border-spacing: 0;
-            margin-bottom: 35px;
-            border: 1px solid #e2e8f0;
-            border-radius: 8px;
+            margin-bottom: 28px;
+            border: 1px solid rgba(11,61,145,0.08);
+            border-radius: 10px;
             overflow: hidden;
+            box-shadow: 0 6px 18px rgba(11,61,145,0.03);
           }
           th {
-            background-color: #0f766e;
+            background: linear-gradient(90deg,#0b3d91 0%,#0b3d91 100%);
             color: #ffffff;
-            font-weight: 600;
+            font-weight: 700;
             text-align: left;
-            padding: 14px;
+            padding: 14px 16px;
             font-size: 13px;
             text-transform: uppercase;
-            letter-spacing: 0.5px;
+            letter-spacing: 0.6px;
+            border-right: 1px solid rgba(255,255,255,0.06);
           }
           th.center, td.center { text-align: center; }
           th.right, td.right { text-align: right; }
           td {
-            padding: 14px;
-            border-bottom: 1px solid #e2e8f0;
-            color: #475569;
+            padding: 14px 16px;
+            border-bottom: 1px solid rgba(11,61,145,0.04);
+            color: #12324a;
             background-color: #ffffff;
           }
           tr:last-child td {
             border-bottom: none;
           }
           tr:nth-child(even) td {
-            background-color: #f8fafc;
+            background-color: #fbfdff;
           }
           .totals-section {
-            width: 50%;
+            width: 48%;
             margin-left: auto;
-            background-color: #f8fafc;
-            border: 1px solid #e2e8f0;
-            border-radius: 8px;
-            padding: 20px;
+            background-color: #ffffff;
+            border: 1px solid rgba(11,61,145,0.06);
+            border-radius: 10px;
+            padding: 14px 18px;
           }
           .totals-row {
             display: flex;
             justify-content: space-between;
-            padding: 10px 0;
-            color: #475569;
+            padding: 10px 4px;
+            color: #12324a;
             font-size: 14px;
           }
           .totals-row:not(:last-child) {
-            border-bottom: 1px dashed #cbd5e1;
+            border-bottom: 1px dashed rgba(11,61,145,0.06);
           }
           .grand-total {
             font-size: 18px;
-            font-weight: 800;
-            color: #0f766e;
-            border-bottom: none;
-            padding-top: 15px;
-            margin-top: 5px;
+            font-weight: 900;
+            color: #ffffff;
+            background: linear-gradient(90deg,#16a34a 0%, #0b3d91 100%);
+            padding: 12px 14px;
+            border-radius: 8px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 10px;
           }
           .footer {
             text-align: center;
@@ -262,7 +266,7 @@ export const buildInvoiceHtml = ({ bill, items, documentOptions }) => {
           }
           .footer-thankyou {
             font-weight: bold;
-            color: #0f766e;
+            color: #0b3d91;
             font-size: 16px;
             margin-bottom: 5px;
           }
@@ -276,6 +280,10 @@ export const buildInvoiceHtml = ({ bill, items, documentOptions }) => {
             <p><strong>Address:</strong> Zahra Street, Abdullah Fouad, Ash Shifa,<br/>Dammam 32236, Saudi Arabia</p>
             <p><strong>CR No:</strong> 205020030</p>
           </div>
+          <div class="title-block">
+            <p class="title-en">${titleEn}</p>
+            <p class="title-ar">${titleAr}</p>
+          </div>
           <div class="qr-invoice-info">
             <div class="invoice-meta">
               <p><strong>${documentNoLabel}:</strong> ${escapeHtml(documentNumber(bill, config))}</p>
@@ -283,15 +291,11 @@ export const buildInvoiceHtml = ({ bill, items, documentOptions }) => {
               ${status ? `<p><strong>Status:</strong> ${escapeHtml(status)}</p>` : ""}
             </div>
             <div class="qr-box">
-              <img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent('Doc No: ' + documentNumber(bill, config))}" alt="QR Code" />
+              <img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=Sample%20QR%20Code" alt="Sample QR Code" />
             </div>
           </div>
         </div>
 
-        <div class="title-container">
-          <p class="title-en">${titleEn}</p>
-          <p class="title-ar">${titleAr}</p>
-        </div>
 
         <div class="customer-section">
           <h3>Bill To</h3>
@@ -315,22 +319,17 @@ export const buildInvoiceHtml = ({ bill, items, documentOptions }) => {
 
         <div class="totals-section">
           <div class="totals-row">
-            <span>Subtotal (Excl. VAT)</span>
+            <span>Subtotal</span>
             <span>${currency(displaySubtotal)}</span>
-          </div>
-          <div class="totals-row">
-            <span>VAT (15%)</span>
-            <span>${currency(displayVat)}</span>
           </div>
           <div class="totals-row grand-total">
             <span>Grand Total</span>
-            <span>${currency(displayGrandTotal)}</span>
+            <span>${currency(displaySubtotal)}</span>
           </div>
         </div>
 
         <div class="footer">
           <div class="footer-thankyou">Thank You For Your Business</div>
-          <p>This is a computer generated document and requires no signature.</p>
         </div>
       </body>
     </html>
